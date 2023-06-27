@@ -1,0 +1,7 @@
+k8s:
+  number: ${SERVER_NUMBER}
+  path: ${KEYSTORE_PATH}
+  password: ${KEYSTORE_PASSWORD}
+  alias: ${KEYSTORE_ALIAS}
+  serviceNameCounterpart: ${SERVICE_NAME_CALLEE}
+  publicKeyCounterpart: ${PUBLIC_KEY_CALLEE}

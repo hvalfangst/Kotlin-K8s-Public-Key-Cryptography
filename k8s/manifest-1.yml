@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: first-server-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: first-server
+  template:
+    metadata:
+      labels:
+        app: first-server
+    spec:
+      containers:
+        - name: first-server-container
+          image: hardokkerdokker/hvalfangst:kotlin-crypto
+          ports:
+            - containerPort: 8080
+          env:
+            - name: SERVER_NUMBER
+              value: "1"
+            - name: KEYSTORE_PATH
+              valueFrom:
+                secretKeyRef:
+                  name: keystore-secret-1
+                  key: path
+            - name: KEYSTORE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: keystore-secret-1
+                  key: password
+            - name: KEYSTORE_ALIAS
+              valueFrom:
+                secretKeyRef:
+                  name: keystore-secret-1
+                  key: alias
+            - name: SERVICE_NAME_CALLEE
+              valueFrom:
+                 secretKeyRef:
+                   name: service-secret-2
+                   key: ip
+            - name: PUBLIC_KEY_CALLEE
+              valueFrom:
+                secretKeyRef:
+                  name: public-key-secret-2
+                  key: public-key.cer
+          volumeMounts:
+            - name: keystore-volume
+              mountPath: /app/src/main/resources
+              readOnly: true
+      volumes:
+        - name: keystore-volume
+          secret:
+            secretName: keystore-secret-1
+            items:
+              - key: server_1_keystore.p12
+                path: server_1_keystore.p12
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: first-server-service
+spec:
+  selector:
+    app: first-server
+  ports:
+    - name: http
+      protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: LoadBalancer
+
