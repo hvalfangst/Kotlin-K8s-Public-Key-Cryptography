@@ -15,20 +15,19 @@ import java.util.*
 import javax.crypto.Cipher
 
 @Service
-class EncryptionService(kubernetesSecretsConfig: KubernetesSecretsConfig) {
+class EncryptionService(kubernetesSecretsConfig: EnvironmentConfiguration) {
     private val logger = LoggerFactory.getLogger(EncryptionService::class.java)
     private val rsaCipher: Cipher = Cipher.getInstance("RSA")
     private val rsaSignature: Signature = Signature.getInstance("SHA256withRSA")
 
-    // Counterpart refers to the other container in the cluster
-    private var calleePublicKey: PublicKey? = null
-
-    private var privateKey: PrivateKey? = null
+    // Counterpart refers to the service of the other deployment in the cluster
+    var publicKeyCounterpart: PublicKey? = null
+    var privateKey: PrivateKey? = null
     final var serverNumber: String? = null
     final var serviceNameCounterpart: String? = null
 
     fun encrypt(data: String): String {
-        rsaCipher.init(Cipher.ENCRYPT_MODE, calleePublicKey)
+        rsaCipher.init(Cipher.ENCRYPT_MODE, publicKeyCounterpart)
         val encryptedBytes = rsaCipher.doFinal(data.toByteArray())
         return Base64.getEncoder().encodeToString(encryptedBytes)
     }
@@ -47,25 +46,26 @@ class EncryptionService(kubernetesSecretsConfig: KubernetesSecretsConfig) {
     }
 
     fun verifySignature(data: String, signature: String): Boolean {
-        rsaSignature.initVerify(calleePublicKey)
+        rsaSignature.initVerify(publicKeyCounterpart)
         rsaSignature.update(data.toByteArray())
         val signatureBytes = Base64.getDecoder().decode(signature)
         return rsaSignature.verify(signatureBytes)
     }
 
-    private fun initKeyStore(kubernetesSecretsConfig: KubernetesSecretsConfig): KeyStore {
+     fun initKeyStore(kubernetesSecretsConfig: EnvironmentConfiguration): KeyStore {
         val keyStore = KeyStore.getInstance("PKCS12")
-        val keystoreFile = File(kubernetesSecretsConfig.keyStorePath)
+        val keystoreFile = File(kubernetesSecretsConfig.getKeyStorePath())
         val inputStream: InputStream = FileInputStream(keystoreFile)
-        keyStore.load(inputStream, kubernetesSecretsConfig.keyStorePassword.toCharArray())
+        keyStore.load(inputStream, kubernetesSecretsConfig.getKeyStorePassword().toCharArray())
         return keyStore
     }
 
-    private fun initPublicKey(kubernetesSecretsConfig: KubernetesSecretsConfig) {
+    private fun initPublicKey(kubernetesSecretsConfig: EnvironmentConfiguration) {
+        logger.info("\n\n - - - |Attempting to initialize Public Key| - - - \n\n")
         try {
-            logger.info(kubernetesSecretsConfig.publicKeyCounterpart)
+            logger.info(kubernetesSecretsConfig.getPublicKeyCounterpart())
 
-            val certificateData = kubernetesSecretsConfig.publicKeyCounterpart
+            val certificateData = kubernetesSecretsConfig.getPublicKeyCounterpart()
                 .replace("-----BEGIN CERTIFICATE-----", "")
                 .replace("-----END CERTIFICATE-----", "")
                 .replace("\\s".toRegex(), "")
@@ -76,10 +76,10 @@ class EncryptionService(kubernetesSecretsConfig: KubernetesSecretsConfig) {
             val certificate = certificateFactory.generateCertificate(certificateBytes.inputStream()) as X509Certificate
             val publicKey = certificate.publicKey
 
-            this.calleePublicKey = publicKey
+            this.publicKeyCounterpart = publicKey
 
-            val calleeServerNumber: String = if (serverNumber == "1") "2" else "1"
-            logger.info("\n\n - - - |Public Key for server #$calleeServerNumber has been set| - - - \n\n")
+            val serverNumbersCounterpart: String = if (serverNumber == "1") "2" else "1"
+            logger.info("\n\n - - - |Public Key for server #$serverNumbersCounterpart has been set| - - - \n\n")
         } catch (e: Exception) {
             logger.error("Error occurred while initializing the public key: {}", e.message)
         }
@@ -87,11 +87,13 @@ class EncryptionService(kubernetesSecretsConfig: KubernetesSecretsConfig) {
 
     private fun initPrivateKey(
         keyStore: KeyStore,
-        kubernetesSecretsConfig: KubernetesSecretsConfig
+        kubernetesSecretsConfig: EnvironmentConfiguration
     ) {
+        logger.info("\n\n - - - |Attempting to initialize Private Key| - - - \n\n")
+
         val privateKey = keyStore.getKey(
-            kubernetesSecretsConfig.keyAlias,
-            kubernetesSecretsConfig.keyStorePassword.toCharArray()
+            kubernetesSecretsConfig.getKeyAlias(),
+            kubernetesSecretsConfig.getKeyStorePassword().toCharArray()
         ) as PrivateKey
         this.privateKey = privateKey
         logger.info("\n\n - - - |Private Key for server #${serverNumber} has been set| - - - \n\n")
@@ -99,11 +101,11 @@ class EncryptionService(kubernetesSecretsConfig: KubernetesSecretsConfig) {
 
     init {
         logger.info("\n\n - - - - |Initializing EncryptionService| - - - - \n\n")
-        serverNumber = kubernetesSecretsConfig.serverNumber
-        serviceNameCounterpart = kubernetesSecretsConfig.serviceNameCounterpart
+        serverNumber = kubernetesSecretsConfig.getServerNumber()
+        serviceNameCounterpart = kubernetesSecretsConfig.getServiceNameCounterpart()
 
-        logger.info("\n\n Server Number: $serverNumber \n\n")
-        logger.info("\n\n Other Server IP: $serviceNameCounterpart \n\n")
+        logger.info("\n\n |Server Number: $serverNumber| \n\n")
+        logger.info("\n\n |Counterpart Service: $serviceNameCounterpart| \n\n")
 
         val keyStore = initKeyStore(kubernetesSecretsConfig)
 

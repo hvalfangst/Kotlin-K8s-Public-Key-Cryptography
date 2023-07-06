@@ -50,8 +50,8 @@ class DataController(@Autowired private val encryptionService: EncryptionService
 
         // Decrypt the incoming encrypted data using the private key
         val decryptedData = encryptionService.decrypt(encryptedData)
-        logger.info("Received encrypted data: $encryptedData")
-        logger.info("Decrypted data: $decryptedData")
+        logger.info("\n\n |Received encrypted data: $encryptedData| \n\n")
+        logger.info("\n\n |Decrypted data: $decryptedData| \n\n")
 
         val amountCharacters = decryptedData.length
 
@@ -60,12 +60,12 @@ class DataController(@Autowired private val encryptionService: EncryptionService
 
         // Encrypt the response using the recipient's public key
         val encryptedResponse = encryptionService.encrypt(response)
-        logger.info("Raw response: $response")
-        logger.info("Encrypted response: $encryptedResponse")
+        logger.info("\n\n |Raw response: $response| \n\n")
+        logger.info("\n\n |Encrypted response: $encryptedResponse| \n\n")
 
         // Sign the encrypted response using the private key
         val responseSignature = encryptionService.sign(encryptedResponse)
-        logger.info("Response signature: $responseSignature")
+        logger.info("\n\n |Response signature: $responseSignature| \n\n")
 
         // Return the signed encrypted response
         return ResponseEntity.ok().body(
@@ -86,9 +86,9 @@ class DataController(@Autowired private val encryptionService: EncryptionService
         val encryptedData = encryptionService.encrypt(data)
         val signature = encryptionService.sign(encryptedData)
 
-        logger.info("Raw request data: $data")
-        logger.info("Encrypted request data: $encryptedData")
-        logger.info("Signature for encrypted data: [$signature]")
+        logger.info("\n\n |Raw request data: $data| \n\n")
+        logger.info("\n\n |Encrypted request data: $encryptedData| \n\n")
+        logger.info("\n\n |Signature for encrypted data: [$signature]| \n\n")
 
         // Wrap encrypted data and its corresponding signature in the MessageRequest type
         val messageRequest = MessageBody(
@@ -114,14 +114,14 @@ class DataController(@Autowired private val encryptionService: EncryptionService
             logger.info("\n\n [SIGNATURE VALID] \n\n")
         }
 
-        logger.info("\n - - - - Encrypted Response Data: [$responseEncryptedData] - - - - \n")
+        logger.info("\n - - - - |Encrypted Response Data: [$responseEncryptedData]| - - - - \n")
         val decryptedResponseData = encryptionService.decrypt(responseEncryptedData)
-        logger.info("\n - - - - Decrypted Response Data: [$decryptedResponseData] - - - - \n")
+        logger.info("\n - - - - |Decrypted Response Data: [$decryptedResponseData]| - - - - \n")
 
         return ResponseEntity.ok(decryptedResponseData)
     }
 
     init {
-        logger.info("\n\n - - - - Initializing Controller - - - - \n\n")
+        logger.info("\n\n - - - - |Initializing Controller| - - - - \n\n")
     }
 }

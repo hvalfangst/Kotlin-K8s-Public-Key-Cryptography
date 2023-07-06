@@ -35,12 +35,12 @@ spec:
                 secretKeyRef:
                   name: keystore-secret-2
                   key: alias
-            - name: SERVICE_NAME_CALLEE
+            - name: SERVICE_NAME_COUNTERPART
               valueFrom:
                  secretKeyRef:
                    name: service-secret-1
                    key: ip
-            - name: PUBLIC_KEY_CALLEE
+            - name: PUBLIC_KEY_COUNTERPART
               valueFrom:
                  secretKeyRef:
                    name: public-key-secret-1

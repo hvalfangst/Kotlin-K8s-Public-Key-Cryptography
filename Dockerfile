@@ -13,8 +13,8 @@ RUN mvn dependency:go-offline -B
 # Copy the application source code
 COPY src src
 
-# Build the application
-RUN mvn package -DskipTests
+# Build the application under profile "kubernetes"
+RUN mvn package -P kubernetes -DskipTests
 
 # Use a slim OpenJDK base image for the final image
 FROM openjdk:17-slim
