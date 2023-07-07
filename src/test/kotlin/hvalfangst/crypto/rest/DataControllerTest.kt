@@ -52,7 +52,7 @@ class DataControllerTest {
 
         verify(encryptionService).verifySignature(encryptedData, signature)
         verify(encryptionService).decrypt(encryptedData)
-        verify(encryptionService).encrypt("The message you sent consists of 13 characters")
+        verify(encryptionService).encrypt("The message you sent consists of ${encryptedData.length} characters")
         verify(encryptionService).sign("encryptedResponse")
     }
 }
